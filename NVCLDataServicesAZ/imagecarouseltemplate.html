@@ -1,0 +1,490 @@
+﻿<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+	<title>NVCL Data Services : Image Carousel Service</title>
+
+	<!-- STYLE -->
+
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO"
+		  crossorigin="anonymous">
+	<link href="https://use.fontawesome.com/releases/v5.0.6/css/all.css" rel="stylesheet">
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js" integrity="sha512-oJp0DdQuQQrRsKVly+Ww6fAN1GwJN7d1bi8UubpEbzDUh84WrJ2CFPBnT4LqBCcfqTcHR5OGXFFhaPe3g1/bzQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/rickshaw/1.7.1/rickshaw.min.js" integrity="sha512-3S/ENqAZXO3KkNgGFRiWLoZDJBa00SVDW87HOzZy8dNJ3Yv+mw0GOe/gbpeo562OuQ3UfLbN4eYfj8JgzKRiqA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/rickshaw/1.7.1/rickshaw.min.css" integrity="sha512-KKmSL0eC7hDfWUgjyBrDnF1CMmmvIJHwBkkFgRmvWaB4tW1edekBh1PHpDdYnaOsf3pKlDASzG74R3KTsww4ZA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+	<script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+			crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
+			crossorigin="anonymous"></script>
+	<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy"
+			crossorigin="anonymous"></script>
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/css-element-queries/1.2.3/ResizeSensor.js" integrity="sha512-TH1YiqLIcRRGn+EOLBXfHtoZfGaPGROB6sEcSC0TK+72bc7Xhn9P/JqaSX+3jw3mxOSdXRuAIZjedCJQtmYfWA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+</head>
+
+<body class="CarouselBody" style="overflow-y: scroll;overflow-x: hidden;">
+
+    <div id="myCarousel" class="carousel" data-interval="false" data-wrap="false">
+
+        <div class="carousel-inner" role="listbox">
+		<!-- CAROUSEL CONTENT -->
+        </div>
+
+        <!-- Left and right controls -->
+        <a class="left carousel-control-prev" href="#myCarousel" role="button" data-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            <span class="sr-only">Previous</span>
+        </a>
+        <a class="right carousel-control-next" href="#myCarousel" role="button" data-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            <span class="sr-only">Next</span>
+        </a>
+    </div>
+    <br>
+    <div id="plotcontainer"></div>
+
+    <script>
+		var colors = ['lightblue', 'lightcoral', 'lightcyan', 'lightgray', 'lightgreen', 'lightpink', 'lightyellow'];
+		var sampletext = ["Previous Sample", "Selected Sample", "Next Sample"];
+		var dragging = false;
+		var dragoriginx = 0;
+		var dragoriginy = 0;
+		var dragorigintop = 0;
+		var dragoriginleft = 0;
+		var movingdiv = null;
+		var counter = 0;
+		var zindex = 99;
+
+		checkprevnext = function () {
+			var $this = $("#myCarousel");
+			//	$this.children('.carousel-control').show();
+			if ($('#myCarousel .carousel-inner .carousel-item:first').hasClass('active')) {
+				$this.children('.carousel-control-prev').hide();
+			}
+			else $this.children('.carousel-control-prev').show();
+			if ($('#myCarousel .carousel-inner .carousel-item:last').hasClass('active')) {
+				$this.children('.carousel-control-next').hide();
+			}
+			else $this.children('.carousel-control-next').show();
+			$activeItem = $('.active.carousel-item', this);
+
+			$itemlist = $('.carousel-item', this);
+
+
+			var i = Math.max($activeItem.index() - 3, 0);
+			var lastindex = $activeItem.index() + 3
+
+			for (; i <= lastindex; i++) {
+				var $item = $($itemlist[i]);
+				var $img = $item.find('img')
+				var src = $img.attr('lazyloadsrc');
+
+				if (typeof src !== "undefined" && src != "") {
+					$img.attr('src', src)
+					$img.attr('lazyloadsrc', '');
+				}
+				$item = $item.next('.carousel-item');
+			}
+
+		};
+
+		checkprevnext();
+
+
+		function dragstart(ev) {
+			dragging = true;
+			if (!ev) ev = window.event;
+			var div = ev.target.parentNode;
+			movingdiv = div
+			dragoriginx = ev.clientX;
+			dragoriginy = ev.clientY;
+			dragoriginleft = parseInt(div.style.left);
+			dragorigintop = parseInt(div.style.top);
+			window.onmousemove = dragmove;
+			window.onmouseup = dragstop;
+			if (ev.stopPropagation) {
+				ev.stopPropagation();
+				ev.preventDefault();
+			}
+			else {
+				ev.cancelBubble = true;
+				ev.returnValue = false;
+			}
+		}
+
+		function dragmove(ev) {
+			if (dragging == false) return;
+			if (!ev) ev = window.event;
+			ev.cancelBubble = true;
+			if (ev.stopPropagation) ev.stopPropagation();
+			var div = movingdiv;
+			div.style.left = dragoriginleft + ev.clientX - dragoriginx + "px";
+			div.style.top = dragorigintop + ev.clientY - dragoriginy + "px";
+			zindex++;
+			div.style.zIndex = zindex;
+		}
+
+		function dragstop(ev) {
+			dragging = false;
+			document.onmousemove = null;
+			document.onmouseup = null;
+			movingdiv = null;
+		}
+
+		function closeplot(counter) {
+			//var div = ev.srcElement.parentNode.parentNode.parentNode;
+			$('#plot' + counter + 'container').remove();
+			$("#marker" + counter).remove();
+		}
+
+		function clearmap() {
+			$('#plotcontainer').empty();
+		}
+
+		$("#myCarousel").on("slid.bs.carousel", "", checkprevnext);
+		$("#myCarousel").on("slid.bs.carousel", "", clearmap);
+
+		var hexDigits = new Array
+        ("0","1","2","3","4","5","6","7","8","9","a","b","c","d","e","f");
+
+		function rgb2hex(rgb) {
+ 			rgb = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+ 			return "#" + hex(rgb[1]) + hex(rgb[2]) + hex(rgb[3]);
+		}
+
+		function hex(x) {
+  			return isNaN(x) ? "00" : hexDigits[(x - x % 16) / 16] + hexDigits[x % 16];
+		}
+		var histograms = [];
+		var imgs = [];
+		var imgsstillloading =0;
+
+		function applyHistotrim(startNo,endNo)
+		{
+			var fullhisto=[];
+			var total=0;
+			var trimpercent =1;
+			var minstretch=0,maxstretch=255;
+			for(i=0;i<256;++i) {
+				fullhisto[i]=0;
+				for (var j=startNo;j<=endNo;j++) {
+					if (histograms[j]) {
+						fullhisto[i] += histograms[j][i];
+						total += histograms[j][i];
+					}
+				}
+			}
+			var mintrim = trimpercent * total/100;
+			var maxtrim = mintrim;
+			for (var i = 0; i < 256; i++)
+			{
+				mintrim -= fullhisto[i];
+				if (mintrim<=0)
+				{
+					minstretch = i;
+					break;
+				}
+			}
+			for (var i = 255; i > 0; i--)
+			{
+				maxtrim -= fullhisto[i];
+				if (maxtrim <= 0)
+				{
+					maxstretch = i;
+					break;
+				}
+			}
+
+			var tempCanvas = document.createElement("canvas");
+			var context = tempCanvas.getContext("2d");
+			for (var i=startNo; i<=endNo;i++){
+				var natheight = imgs[i].prop('naturalHeight');
+				var natwidth = imgs[i].prop('naturalWidth');
+				if (imgs[i].hasClass('hiddenLSImage')) continue;
+				tempCanvas.width = natwidth;
+    			tempCanvas.height = natheight;
+				context.drawImage(imgs[i][0], 0, 0);
+				imgdata = context.getImageData(0, 0, natwidth, natheight);
+				data = imgdata.data;
+				var x, y, idx, val;
+				for(y=0,idx=0;y<natheight*4;++y) {
+        			for(x=0;x<natwidth*4;++x,idx++) {
+						if (idx % 4 ==3) continue;
+						// figure out which bin it is in
+						val = Math.floor(((data[idx] -minstretch) * 255.0) / (maxstretch-minstretch));
+						if (val < 0) val = 0;
+						if (val > 255) val = 255;
+						data[idx] = val;
+        			}
+				}
+				context.putImageData(imgdata, 0, 0);
+				var imgurl = tempCanvas.toDataURL("image/png");
+				imgs[i].prop('origsrc', imgs[i][0].src);
+				imgs[i][0].src = imgurl;
+				imgs[i].removeAttr('hidden');
+			}
+		}
+
+		function switchLSImagesBacktoOrig()
+		{
+			for (i=0;i<imgs.length;i++)
+			{
+				if (imgs[i] !== undefined) {
+					imgs[i].prop('adjustedsrc', imgs[i][0].src);
+					imgs[i][0].src = imgs[i].prop('origsrc');
+				}
+			}
+		}
+
+		 function LSImageLoaded(sampleNo,startNo,EndNo,img)
+		 {
+			var natheight =img.prop('naturalHeight');
+			var natwidth = img.prop('naturalWidth');
+			if (natwidth==0 || natheight==0) {setTimeout(LSImageLoaded,500,sampleNo,startNo,EndNo,img); return;}
+			var i, x, y, idx, val;
+			var hist = [];
+    		// initialize the histogram
+    		for(i=0;i<256;++i)
+				hist[i] = 0;
+			histograms[sampleNo] = hist;
+			imgs[sampleNo] = img;
+			var tempCanvas = document.createElement("canvas");
+			var context = tempCanvas.getContext("2d");
+			tempCanvas.width = natwidth;
+    		tempCanvas.height = natheight;
+			context.drawImage(img[ 0 ], 0, 0);
+			data = context.getImageData(0, 0, natwidth, natheight).data;
+			for(y=0,idx=0;y<natheight*4;++y) {
+        		for(x=0;x<natwidth*4;++x,idx++) {
+					if (idx % 4 ==3) continue;
+					val = data[idx];
+					++hist[val];
+        		}
+    		}
+			imgsstillloading-=1;
+			if (imgsstillloading==0) applyHistotrim(startNo,EndNo);
+		}
+
+		function drawgraph(k, wavelengths, startSampleNo, endSampleNo, width, height,counter) {
+			return function (result) {
+				var data = [];
+
+				//var floats = new Float32Array(result);
+				var spectracount = result.length// result.byteLength/(4*wavelengths.length);
+				var palette = new Rickshaw.Color.Palette({ scheme: 'munin' });
+				for (var j = 0; j < spectracount; j++) {
+					var d1 = [];
+
+					for (var i = 0; i < result[j].floatspectraldata.length; i++) {
+						d1.push({ x: parseInt(wavelengths[i]), y: result[j].floatspectraldata[i] });
+					}
+					var dataname="";
+					if (spectracount < 3 && startSampleNo==0){
+						dataname=sampletext[j+1];
+					}
+					else dataname=sampletext[j];
+					data.push({ data: d1, name: dataname , color: palette.color() });
+				}
+				var graph = new Rickshaw.Graph({
+					element: document.getElementById("chart" + startSampleNo + "_" + k),
+					width: width,
+					height: height,
+					renderer: 'line',
+					padding: { top: 0.05, left: 0.05, right: 0.05, bottom: 0.05 },
+					series: data,
+					min: 'auto'
+				});
+
+				var y_axis = new Rickshaw.Graph.Axis.Y({
+					graph: graph,
+					tickFormat: d3.format('.2f'),
+
+				});
+				var x_axis = new Rickshaw.Graph.Axis.X({
+					graph: graph,
+					tickFormat: d3.format('.0f')
+				});
+				var legend = new Rickshaw.Graph.Legend({
+					element: document.querySelector("#legend" + startSampleNo + "_" + k),
+					graph: graph
+				});
+				var shelving = new Rickshaw.Graph.Behavior.Series.Toggle({
+					graph: graph,
+					legend: legend
+				});
+				var hoverDetail = new Rickshaw.Graph.HoverDetail({
+					graph: graph,
+					formatter: function(series, x, y) {
+                		var content = '<span><span style="border: 1px solid rgb(204, 204, 204); display: inline-block; width: 12px; height: 12px; margin: 0px 4px; background-color: '+series.color+';"></span>' + series.name +' : '+  d3.round(y,2)+'</span>';
+                		$('#plot' + counter + 'container .LSImageSlice').each(function() {
+							if (rgb2hex($(this).css("border-left-color"))!=series.color) $(this).fadeTo(0, 0.5);
+							else $(this).fadeTo(0, 1);
+						});
+                		return content;
+            		},
+					onHide : function() {
+						$('#plot' + counter + 'container .LSImageSlice').each(function() {
+							$(this).fadeTo(0, 1);
+						});
+					},
+					xFormatter: function (x, y) {
+						return x.toString();
+					}
+				});
+				var resizegraph = function() {
+					var newwidth = $('#plot' + counter + 'container').width();
+					var newheight =  $('#plot' + counter + 'container').height();
+					var imgsliceheight=$('#plot' + counter + 'container'+' .LSImageSlice').first().height();
+					if (typeof imgsliceheight !== "undefined" && imgsliceheight>0) {
+						graph.configure({
+							width: newwidth - 20 - imgsliceheight*5,
+							height: (newheight-24)/2 - 20
+						});
+						graph.render();
+					}
+				}
+				new ResizeSensor($('#plot' + counter + 'container'), function(){
+					resizegraph();
+				});
+				setTimeout(resizegraph,500);
+				setTimeout(resizegraph,2000);
+				graph.render();
+			}
+		}
+
+		function resizewindow(plotcontainer) {
+			var plotcontainerwidth = plotcontainer.width();
+			var plotcontainerheight =  plotcontainer.height();
+			if (plotcontainerwidth > (plotcontainerheight-24)*1.3333) plotcontainerwidth = (plotcontainerheight-24)*1.3333;
+			else plotcontainerheight = (plotcontainerwidth/1.333)+24;
+			plotcontainer.width(plotcontainerwidth+'px');
+			plotcontainer.height(plotcontainerheight+'px');
+			plotcontainer.find('.LSImageSlice').each(function(index) {
+				if ($(this).height()==0) setTimeout(resizewindow,500,plotcontainer);
+				else {
+					$(this).height('');
+					var maxLSwidth = Math.ceil((plotcontainerwidth*0.4)/5); // max size of linescan display 40% of total window
+					if ($(this).prop('naturalHeight') < maxLSwidth) $(this).height(maxLSwidth);
+					else $(this).height(Math.min(Math.ceil($(this).height()),maxLSwidth));
+					if (index ==0) plotcontainer.find('.plotspectracontainer').first().css({ left: ($(this).height()*5) +'px'});
+				}
+			});
+		}
+
+		function buildPlots(specidsStr, startSampleNo, endSampleNo, width, height, LSimageID,counter,maxsampleno) {
+
+			var specids = specidsStr.split(",");
+			var imgslices = $('<div id="imgSlicesRotatedDiv'+startSampleNo+'" class="imgSlicesRotatedDiv"></div>');
+			var imglink = $('<a href="./mosaic.html?logid='+LSimageID+'&startsampleno='+Math.max((startSampleNo - 2), 0)+'&endsampleno='+(endSampleNo+2)+'&width=1" target="_blank" class="LSImageLink" ></a>');
+			var extraimagesForHistogram = 5;
+			imgsstillloading = Math.min(endSampleNo+extraimagesForHistogram,maxsampleno) - Math.max(startSampleNo-extraimagesForHistogram,0)+1;
+			for (var i=Math.max(startSampleNo-extraimagesForHistogram,0);i<=Math.min(endSampleNo+extraimagesForHistogram,maxsampleno);i++) {
+				var LSimg = $("<img>")
+				if (i==startSampleNo) LSimg.css('border-color', '#00cc00');
+				else if (i==startSampleNo+1) LSimg.css('border-color', '#0066b3');
+				else if (i==startSampleNo+2) LSimg.css('border-color', '#ff8000');
+				else LSimg.css('border-color', '#ffffff');
+				LSimg.attr('class','LSImageSlice');
+				LSimg.attr('hidden','true');
+				LSimg.attr('src', 'getImage.html?logid='+LSimageID+'&sampleno='+i);//+'&uncorrected=yes');
+				if (i < (startSampleNo -1) || i > (endSampleNo+1)) LSimg.attr('class','hiddenLSImage');
+				LSimg.on('load',LSImageLoaded(i,Math.max(startSampleNo-extraimagesForHistogram,0),Math.min(endSampleNo+extraimagesForHistogram,maxsampleno),LSimg))
+				imglink.append(LSimg);
+			}
+			imgslices.append(imglink);
+			$('#plotspectra' + startSampleNo).append(imgslices);
+			$('#plotspectra' + startSampleNo).append('<div id="plotspectra'+startSampleNo+'div" class="plotspectracontainer"></div>');
+			specids.forEach(function (speclogid, k) {
+
+				$('#plotspectra'+startSampleNo+'div').append("<div id=\"chart_container" + startSampleNo + "_" + k + "\" class=\"chart_container\"><div id=\"chart" + startSampleNo + "_" + k + "\" class=\"chart\"></div><div id=\"legend" + startSampleNo + "_" + k + "\" class=\"legend\"></div></div>");
+
+				$.getJSON("getSpectralLogSamplingPoints.html?speclogid=" + speclogid, function (specwvldata) {
+					var wavelengths = specwvldata["wavelengths"].split(",");
+
+					$.getJSON("getspectraldata.html?speclogid=" + speclogid + "&startsampleno=" + startSampleNo + "&endsampleno=" + endSampleNo + "&outputformat=json", drawgraph(k, wavelengths, startSampleNo, endSampleNo, width, height,counter));
+				});
+
+			});
+		}
+
+		showspectra = function (event) {
+			var $this = $('#myCarousel .carousel-inner .active.carousel-item img');
+			var parentOffset = $this.parent().offset();
+			var offset = $this.offset();
+			var x = Math.round(event.pageX - offset.left);
+			var y = Math.round(event.pageY - offset.top);
+			var height = Math.round($this.height());
+			var width = Math.round($this.width());
+			var src = $this.prop('src');
+			var logidindex = src.indexOf('logid=');
+			var logid = src.slice(logidindex);
+			var andpos = logid.indexOf('&');
+			logid = logid.substr(0, andpos);
+			var traysamplenumber = src.slice(src.indexOf('sampleno='));
+			traysamplenumber = traysamplenumber.substr(9, traysamplenumber.length);
+			$.getJSON("trayImageSampleLocate.html?" + logid + "&sampleno=" + traysamplenumber + "&pixelx=" + x + "&pixely=" + y + "&imgwidth=" + width + "&imgheight=" + height, function (data) {
+				var specsamplenumber = data["sampleno"];
+				var specsamplenumber = Math.max(specsamplenumber,1);
+				$.getJSON("getDatasetID.html?" + logid, function (dsdata) {
+					var dsid = dsdata["datasetid"];
+					$.getJSON("getDatasetCollection.html?datasetid=" + dsid + "&outputformat=json", function (speclogsdata) {
+						var swirspectra = "";
+						var tirspectra = "";
+						var LSimageID = "";
+						var maxsampleno=0;
+						$.each(speclogsdata[0].spectralLogs, function (key, value) {
+							if (value["logName"] == "Reflectance") {
+								swirspectra = value["logID"];
+								if(typeof value["sampleCount"] !== "undefined")	maxsampleno = Math.max(value["sampleCount"]-1,maxsampleno);
+							}
+							else if (value["logName"] == "Base Refl") {
+								tirspectra = value["logID"];
+								if(typeof value["sampleCount"] !== "undefined")	maxsampleno = Math.max(value["sampleCount"]-1,maxsampleno);
+							}
+						});
+						$.each(speclogsdata[0].imageLogs, function (key, value) {
+							if (value["logName"] == "Imagery") {
+								LSimageID = value["logID"];
+								if(typeof value["sampleCount"] !== "undefined")	maxsampleno = Math.max(value["sampleCount"]-1,maxsampleno);
+							}
+						});
+						var allspectra = swirspectra + (tirspectra.length > 0 ? "," + tirspectra : "");
+						counter++;
+						if ($("#plotspectra" + Math.max((specsamplenumber - 1), 0)).length != 0) {
+							var plotspecwid = "#plotspectra" + Math.max((specsamplenumber - 1), 0);
+							var plotspeccontainer = $(plotspecwid).parents(".floatingGraph");
+							var currentcounter = plotspeccontainer.attr('id').replace("plot", "").replace("container", "");
+							$("#marker" + currentcounter).remove();
+							plotspeccontainer.remove();
+						}
+						$('<div id="marker' + counter + '" style="px;background:' + colors[counter % 7] + '" class="circle"><div class="flabel-center">' + counter + '</div></div><div id="plot' + counter + 'container" class="floatingGraph" ><div onmousedown="dragstart(event);" style="width:100%;background:' + colors[counter % 7] + ';text-align:center;" >Drag to move<div style="float:right;"><span onclick=closeplot(' + counter + '); class="m-1"><i class="fa fa-window-close fa-lg" style="margin:3px"></i></span></div></div><div id="plotspectra' + (specsamplenumber - 1) + '" style="height: 600px"></div></div>').appendTo($('#plotcontainer'));
+						var graphwidth = 540;
+						var graphheight = 280;
+						var parentcontainer = $('#plot' + counter + 'container');
+						var parentcontainerwidth = parentcontainer.width();
+						var parentcontainerheight =  parentcontainer.height();
+						graphwidth = parentcontainerwidth*0.68 - 20;
+						graphheight = (parentcontainerheight-24)/2 - 20;
+						new ResizeSensor(parentcontainer, function(){
+							resizewindow(parentcontainer);
+						});
+						buildPlots(allspectra, specsamplenumber - 1, Math.min(specsamplenumber + 1,maxsampleno), graphwidth, graphheight, LSimageID,counter,maxsampleno);
+						//$(".chart_container").css({ position: "relative", width: graphwidth });
+						$("#marker" + counter).css({ left: (event.pageX - 13), top: (event.pageY - 13) });
+						$("#plot" + counter + "container").css({ top: event.pageY, left: event.pageX, position: 'absolute', display: 'block' });
+					});
+				});
+			});
+		};
+
+		$(".caroimage").on("click", "", showspectra);
+
+		$(window).resize(function () { clearmap(); });
+
+    </script>
+</body>
+
+</html>

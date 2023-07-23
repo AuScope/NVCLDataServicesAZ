@@ -1,0 +1,186 @@
+﻿
+h2.NVCLDSh2 {
+    padding: 8px;
+    text-align: center;
+}
+
+table.NVCLDSTable {
+    background: #CCFFFF;
+    margin-left: auto;
+    margin-right: auto;
+    width: 800px;
+    border: 2px solid #000066;
+}
+
+table.usageTable {
+    border: 1px solid black;
+    border-collapse: collapse;
+}
+
+    table.usageTable td, table.usageTable th {
+        border: 1px solid black;
+        padding: 8px;
+    }
+
+table.NVCLDSTable td, table.NVCLDSTable th {
+    padding: 8px;
+}
+
+table.NVCLDSTable thead {
+    background-color: #99CCCC;
+}
+
+.pixelated {
+    image-rendering: optimizeSpeed; /* Legal fallback */
+    image-rendering: -moz-crisp-edges; /* Firefox        */
+    image-rendering: -o-crisp-edges; /* Opera          */
+    image-rendering: -webkit-optimize-contrast; /* Safari         */
+    image-rendering: optimize-contrast; /* CSS3 Proposed  */
+    image-rendering: crisp-edges; /* CSS4 Proposed  */
+    image-rendering: pixelated; /* CSS4 Proposed  */
+    -ms-interpolation-mode: nearest-neighbor; /* IE8+           */
+}
+
+.NVCLMosaicCell, .NVCLMosaicCelltwoDCell {
+    display: block;
+    float: left;
+}
+
+.NVCLMosaicCelltwoDCell {
+    border-bottom: black solid 2px;
+    border-top: black solid 2px;
+    margin-bottom: 2px;
+}
+
+.NVCLMosaicCellContent {
+    display: table;
+    table-layout: fixed;
+    width: 100%;
+    height: 100%;
+}
+
+.NVCLMosaicCellDepths {
+    vertical-align: middle;
+    display: table-cell;
+    width: 33%;
+}
+
+.NVCLMosaicCellPara {
+    text-align: center;
+    margin: 0;
+}
+
+.NVCLMosaicCellImg {
+    display: table-cell;
+    height: 100%;
+}
+
+.NVCLMosaicImage {
+    display: block;
+    width: 100%;
+}
+
+.floatingGraph {
+    position: absolute;
+    z-index: 99;
+    width: 800px;
+    background: white;
+    overflow: hidden;
+    display: none;
+    resize: both;
+}
+
+.circle {
+    border-radius: 50%;
+    width: 26px;
+    height: 26px;
+    background: green;
+    position: absolute;
+}
+
+.flabel-center {
+    text-align: center;
+    vertical-align: middle;
+    position: relative;
+    line-height: 26px;
+    font-size: 1em;
+}
+
+.carousel-inner > .carousel-item > img,
+.carousel-inner > .carousel-item > a > img {
+    margin: auto;
+}
+
+.carousel {
+    position: absolute;
+    width: 90%;
+}
+
+.carousel-control-prev {
+    width: 5% !important;
+}
+
+.carousel-control-next {
+    width: 5% !important;
+    right: -10% !important;
+}
+
+.caroimage {
+    width: 100%;
+}
+
+.carousel-inner {
+    left: 5%;
+}
+
+.CarouselBody {
+    background-color: black;
+}
+
+.legend {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: none !important;
+}
+
+.LSImageSlice {
+    display: block;
+    max-width: 100%;
+    border-left-width: 8px;
+    border-right-width: 8px;
+    border-style: solid;
+    border-top-width: 0px;
+    border-bottom-width: 0px;
+}
+
+.imgSlicesRotatedDiv {
+    transform: rotate(270deg);
+    transform-origin: top left;
+    width: 75%;
+    top: 100%;
+    position: absolute;
+}
+
+.plotspectracontainer {
+    position: relative;
+    left: 32%;
+}
+
+.chart_container {
+    margin: 10px;
+}
+
+.chart {
+    display: flex
+}
+
+.LSImageLink {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.hiddenLSImage {
+    width: 0px;
+}
