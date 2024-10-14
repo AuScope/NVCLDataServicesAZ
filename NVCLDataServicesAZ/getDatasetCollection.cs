@@ -7,10 +7,6 @@ using System.Xml.Serialization;
 using System.Xml;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
-using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Enums;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
@@ -24,6 +20,8 @@ using System.Net.Http;
 using System.Text;
 using Microsoft.AspNetCore.Hosting.Server;
 using System.Globalization;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
 
 namespace NVCLDataServicesAZ
 {
@@ -38,7 +36,7 @@ namespace NVCLDataServicesAZ
             _logger = log;
         }
 
-        [FunctionName("getDatasetCollection")]
+        [Function("getDatasetCollection")]
         [OpenApiOperation(operationId: "Run", tags: new[] { "holeidentifier", "datasetid" })]
         [OpenApiParameter(name: "holeidentifier", In = ParameterLocation.Query, Required = false, Type = typeof(string), Description = "The **holeidentifier** parameter")]
         [OpenApiParameter(name: "datasetid", In = ParameterLocation.Query, Required = false, Type = typeof(string), Description = "The **datasetid** parameter")]

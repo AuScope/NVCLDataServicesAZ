@@ -5,10 +5,6 @@ using System.Xml.Xsl;
 using System.Xml;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
-using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Enums;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
@@ -18,20 +14,23 @@ using System.Data;
 using System.Xml.Serialization;
 using Microsoft.Data.SqlClient;
 using System.Xml.Linq;
-using static Microsoft.AspNetCore.Hosting.Internal.HostingApplication;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Enums;
+
 
 namespace NVCLDataServicesAZ
 {
-    public class checktsgstatus
+    public class CheckTSGStatus
     {
-        private readonly ILogger<checktsgstatus> _logger;
+        private readonly ILogger<CheckTSGStatus> _logger;
 
-        public checktsgstatus(ILogger<checktsgstatus> log)
+        public CheckTSGStatus(ILogger<CheckTSGStatus> log)
         {
             _logger = log;
         }
 
-        [FunctionName("checktsgstatus")]
+        [Function("checktsgstatus")]
         [OpenApiOperation(operationId: "checktsgstatus", tags: new[] { "name" })]
         [OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
         [OpenApiParameter(name: "name", In = ParameterLocation.Query, Required = true, Type = typeof(string), Description = "The **Name** parameter")]
@@ -70,11 +69,11 @@ namespace NVCLDataServicesAZ
             }
 
             if (!string.IsNullOrEmpty(rawxml)) {
-                // string home = Environment.GetEnvironmentVariable("HOME", EnvironmentVariableTarget.Process);
-                // if (string.IsNullOrEmpty(home)) throw new Exception("home environment variable is not set.  This should be set by Azure");
+                string home = Environment.GetEnvironmentVariable("HOME", EnvironmentVariableTarget.Process);
+                if (string.IsNullOrEmpty(home)) throw new Exception("home environment variable is not set.  This should be set by Azure");
 
-                //string xsltpath = Path.Combine(home, "site", "wwwroot", "datasetlist.xslt");
-                var xsltpath = Path.GetFullPath(Path.Combine(context.FunctionDirectory, $"..{Path.DirectorySeparatorChar}datasetlist.xslt"));
+                string xsltpath = Path.Combine(home, "site", "wwwroot", "datasetlist.xslt");
+                //var xsltpath = Path.GetFullPath(Path.Combine(context.FunctionDirectory, $"..{Path.DirectorySeparatorChar}datasetlist.xslt"));
 
 
                 //var newDocument = new HTMLDocument();

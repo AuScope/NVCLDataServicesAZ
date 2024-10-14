@@ -6,9 +6,6 @@ using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
@@ -16,19 +13,21 @@ using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using SkiaSharp;
 using static System.Net.Mime.MediaTypeNames;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
 
 namespace NVCLDataServicesAZ
 {
-    public class gettraymap
+    public class GetTrayMap
     {
-        private readonly ILogger<gettraymap> _logger;
+        private readonly ILogger<GetTrayMap> _logger;
 
-        public gettraymap(ILogger<gettraymap> log)
+        public GetTrayMap(ILogger<GetTrayMap> log)
         {
             _logger = log;
         }
 
-        [FunctionName("gettraymap")]
+        [Function("gettraymap")]
         [OpenApiOperation(operationId: "Run", tags: new[] { "logid" })]
         [OpenApiParameter(name: "logid", In = ParameterLocation.Query, Required = true, Type = typeof(string), Description = "The **logid** parameter")]
         [OpenApiParameter(name: "trayindex", In = ParameterLocation.Query, Required = true, Type = typeof(int), Description = "The **trayindex** parameter")]

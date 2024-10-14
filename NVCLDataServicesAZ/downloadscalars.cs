@@ -11,9 +11,6 @@ using System.Xml;
 using Dapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
@@ -22,19 +19,21 @@ using Sharpen;
 using System.Data;
 using CsvHelper;
 using System.Text.RegularExpressions;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
 
 namespace NVCLDataServicesAZ
 {
-    public class downloadscalars
+    public class DownloadScalars
     {
-        private readonly ILogger<downloadscalars> _logger;
+        private readonly ILogger<DownloadScalars> _logger;
 
-        public downloadscalars(ILogger<downloadscalars> log)
+        public DownloadScalars(ILogger<DownloadScalars> log)
         {
             _logger = log;
         }
 
-        [FunctionName("downloadscalars")]
+        [Function("downloadscalars")]
         [OpenApiOperation(operationId: "Run", tags: new[] { "logid" })]
         [OpenApiParameter(name: "logid", In = ParameterLocation.Query, Required = true, Type = typeof(string), Description = "The **logid** of the scalar to download.  This can be a single or list of scalar ids")]
         [OpenApiParameter(name: "startdepth", In = ParameterLocation.Query, Required = false, Type = typeof(float), Description = "The **startdepth** parameter")]
@@ -205,8 +204,6 @@ namespace NVCLDataServicesAZ
                         }
                         csv.NextRecord();
                     }
-                    csv.Flush();
-                    sw.Flush();
                     ms.Seek(0, SeekOrigin.Begin);
 
                     return new FileStreamResult(ms, "text/csv");

@@ -5,55 +5,56 @@ using System.IO.Compression;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using System.Web;
 using Azure.Storage.Blobs.Models;
 using Azure.Storage.Blobs.Specialized;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.DurableTask;
-using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using SendGrid;
 using SendGrid.Helpers.Mail;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.DurableTask;
+using Microsoft.DurableTask.Entities;
+using Microsoft.DurableTask.Client;
 
 namespace NVCLDataServicesAZ
 {
-    public class MyLockEntity
+    public class ResourceLockEntity
     {
-        [FunctionName(nameof(MyLockEntity))]
-        public static Task Run([EntityTrigger] IDurableEntityContext ctx) => ctx.DispatchAsync<MyLockEntity>();
+        [Function(nameof(ResourceLockEntity))]
+        public static Task Run([EntityTrigger] TaskEntityDispatcher dispatcher) => dispatcher.DispatchAsync(operation => default);
     }
 
-    public static class downloadtsg
+    public static class DownloadTSG
     {
         static HttpClient client = new HttpClient();
 
-        [FunctionName("downloadtsgOrchestrator")]
+        [Function("downloadtsgOrchestrator")]
         public static async Task RunOrchestrator(
-            [OrchestrationTrigger] IDurableOrchestrationContext context)
+            [OrchestrationTrigger] TaskOrchestrationContext context)
         {
 
             DownloadRequestParams downloadTSGParams = context.GetInput<DownloadRequestParams>();
 
-            var lockId = new EntityId(nameof(MyLockEntity), "MyLockIdentifier");
-            using (await context.LockAsync(lockId))
+            var lockId = new EntityInstanceId(nameof(ResourceLockEntity), "MyLockIdentifier");
+
+            await context.Entities.LockEntitiesAsync(lockId);
+
+            downloadTSGParams.downloadURL = await context.CallActivityAsync<string>(nameof(isTSGFileCached), downloadTSGParams);
+            if (string.IsNullOrEmpty(downloadTSGParams.downloadURL))
             {
-                downloadTSGParams.downloadURL = await context.CallActivityAsync<string>(nameof(isTSGFileCached), downloadTSGParams);
-                if (string.IsNullOrEmpty(downloadTSGParams.downloadURL))
-                {
-                    Boolean tsgresult = await context.CallActivityAsync<Boolean>(nameof(BuildTSGFiles), downloadTSGParams);
-                    if ( !tsgresult) { throw new Exception("tsg download process failed for dataset with ID : " + downloadTSGParams.datasetid); }
-                    await context.CallActivityAsync<string>(nameof(CompressTSGFiles), downloadTSGParams);
-                    downloadTSGParams.downloadURL = await context.CallActivityAsync<string>(nameof(CopyCompressedTSGFilesToStorage), downloadTSGParams);
-                }
-                //if(!string.IsNullOrEmpty(downloadTSGParams.downloadURL)) await context.CallActivityAsync<string>(nameof(EmailLinkToUser), downloadTSGParams);
+                Boolean tsgresult = await context.CallActivityAsync<Boolean>(nameof(BuildTSGFiles), downloadTSGParams);
+                if ( !tsgresult) { throw new Exception("tsg download process failed for dataset with ID : " + downloadTSGParams.datasetid); }
+                await context.CallActivityAsync<string>(nameof(CompressTSGFiles), downloadTSGParams);
+                downloadTSGParams.downloadURL = await context.CallActivityAsync<string>(nameof(CopyCompressedTSGFilesToStorage), downloadTSGParams);
             }
+            //if(!string.IsNullOrEmpty(downloadTSGParams.downloadURL)) await context.CallActivityAsync<string>(nameof(EmailLinkToUser), downloadTSGParams);
+
 
         }
 
-        [FunctionName(nameof(isTSGFileCached))]
+        [Function(nameof(isTSGFileCached))]
         public static string isTSGFileCached([ActivityTrigger] DownloadRequestParams downloadTSGParams, ILogger log, ExecutionContext context)
         {
             string TSGFileCachePublicUrl = Environment.GetEnvironmentVariable("TSGFileCachePublicUrl", EnvironmentVariableTarget.Process);
@@ -98,7 +99,7 @@ namespace NVCLDataServicesAZ
             return null;
         }
 
-            [FunctionName(nameof(BuildTSGFiles))]
+            [Function(nameof(BuildTSGFiles))]
         public static Boolean BuildTSGFiles([ActivityTrigger] DownloadRequestParams downloadTSGParams, ILogger log, ExecutionContext context)
         {
             string Connection_string = Environment.GetEnvironmentVariable("DBConStrTSGFromat", EnvironmentVariableTarget.Process);
@@ -124,7 +125,8 @@ namespace NVCLDataServicesAZ
 
 
             System.Diagnostics.Process process = new System.Diagnostics.Process();
-            var exepath = Path.GetFullPath(Path.Combine(context.FunctionDirectory, $"..{Path.DirectorySeparatorChar}tsgeol8.exe"));
+
+            var exepath = Path.GetFullPath(Path.Combine(home, "site", "wwwroot", "tsgeol8.exe"));
             process.StartInfo.FileName = exepath;
 
             string tempspace = Path.Combine(home, "TSGFiles");
@@ -173,7 +175,7 @@ namespace NVCLDataServicesAZ
             else return true;
         }
 
-        [FunctionName(nameof(CompressTSGFiles))]
+        [Function(nameof(CompressTSGFiles))]
         public static string CompressTSGFiles([ActivityTrigger] DownloadRequestParams downloadTSGParams, ILogger log)
         {
             log.LogInformation("Compressing files");
@@ -193,7 +195,7 @@ namespace NVCLDataServicesAZ
             return "ok";
         }
 
-        [FunctionName(nameof(CopyCompressedTSGFilesToStorage))]
+        [Function(nameof(CopyCompressedTSGFilesToStorage))]
         public static string CopyCompressedTSGFilesToStorage([ActivityTrigger] DownloadRequestParams downloadTSGParams, ILogger log)
         {
             string blobStoreConStr = Environment.GetEnvironmentVariable("TSGFileCacheBlobStoreConStr", EnvironmentVariableTarget.Process);
@@ -232,7 +234,7 @@ namespace NVCLDataServicesAZ
             return TSGFileCachePublicUrl + "/" + downloadTSGParams.datasetid + ".zip"; ;
         }
 
-        [FunctionName(nameof(EmailLinkToUser))]
+        [Function(nameof(EmailLinkToUser))]
         public static string EmailLinkToUser([ActivityTrigger] DownloadRequestParams downloadTSGParams, ILogger log)
         {
 
@@ -259,51 +261,47 @@ namespace NVCLDataServicesAZ
 
 
 
-        [FunctionName("downloadtsg_HttpStart")]
-        public static async Task<HttpResponseMessage> HttpStart(
-            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequestMessage req,
-            [DurableClient] IDurableOrchestrationClient starter,
+        [Function("downloadtsg_HttpStart")]
+        public static Task HttpStart(
+            [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post")] HttpRequest req,
+            [DurableClient] DurableTaskClient starter,
             ILogger log)
         {
 
-            var query = HttpUtility.ParseQueryString(req.RequestUri.Query);
-            string datasetid = query.Get("datasetid");
-            string email = query.Get("email");
+            string datasetid = req.Query["datasetid"];
+            string email = req.Query["email"];
 
             // Function input comes from the request content.
-            string instanceId = await starter.StartNewAsync("downloadtsgOrchestrator", new DownloadRequestParams { datasetid=datasetid,email=email } );
+            return starter.ScheduleNewOrchestrationInstanceAsync("downloadtsgOrchestrator", new DownloadRequestParams { datasetid=datasetid,email=email } );
 
-            log.LogInformation("Started orchestration with ID = '{instanceId}'.", instanceId);
-
-            return starter.CreateCheckStatusResponse(req, instanceId);
         }
 
-        [FunctionName("TriggerDownloadJob")]
+        [Function("TriggerDownloadJob")]
         public static async Task RunAsync(
             [QueueTrigger("TSGDownloadRequests")] DownloadRequestParams myQueueItem,
-            [DurableClient] IDurableOrchestrationClient starter,
+            [DurableClient] DurableTaskClient starter,
             ILogger log)
         {
-            string instanceId = await starter.StartNewAsync("downloadtsgOrchestrator", myQueueItem);
+            string instanceId = await starter.ScheduleNewOrchestrationInstanceAsync("downloadtsgOrchestrator", myQueueItem);
 
             log.LogInformation("Queue triger Started orchestration with ID = '{instanceId}'.", instanceId);
 
         }
 
-        [FunctionName("EnqueueDownloadtsgJob")]
-        public static async Task<IActionResult> Run(
+        [Function("EnqueueDownloadtsgJob")]
+        [QueueOutput("TSGDownloadRequests")]
+        public static DownloadRequestParams Run(
             [HttpTrigger(AuthorizationLevel.Anonymous, "get", "post", Route = "downloadtsg.html")] HttpRequest req,
-            [Queue("TSGDownloadRequests")] ICollector<DownloadRequestParams> msg,
             ILogger log)
         {
             string datasetid = req.Query["datasetid"];
 
             if (!string.IsNullOrEmpty(datasetid))
             {
-                msg.Add(new DownloadRequestParams { datasetid = datasetid, email = "" });
+                return (new DownloadRequestParams { datasetid = datasetid, email = "" });
             }
 
-            return new RedirectResult("checktsgstatus.html");
+            return null;
         }
     }
 }

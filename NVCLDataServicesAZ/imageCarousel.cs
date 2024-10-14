@@ -8,14 +8,13 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
-using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Enums;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Enums;
 
 namespace NVCLDataServicesAZ
 {
@@ -28,7 +27,7 @@ namespace NVCLDataServicesAZ
             _logger = log;
         }
 
-        [FunctionName("imageCarousel")]
+        [Function("imageCarousel")]
         [OpenApiOperation(operationId: "Run", tags: new[] { "logid" })]
         [OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
         [OpenApiParameter(name: "logid", In = ParameterLocation.Query, Required = true, Type = typeof(string), Description = "The **logid** parameter")]
@@ -51,8 +50,10 @@ namespace NVCLDataServicesAZ
             string proxyBaseUrl = Environment.GetEnvironmentVariable("proxyBaseUrl", EnvironmentVariableTarget.Process);
             if (!string.IsNullOrEmpty(proxyBaseUrl)) baseurl = proxyBaseUrl;
 
-            //string home = Environment.GetEnvironmentVariable("HOME", EnvironmentVariableTarget.Process);
-            //if (string.IsNullOrEmpty(home)) throw new Exception("home environment variable is not set.  This should be set by Azure");
+            string home = Environment.GetEnvironmentVariable("HOME", EnvironmentVariableTarget.Process);
+            if (string.IsNullOrEmpty(home)) throw new Exception("home environment variable is not set.  This should be set by Azure");
+
+            string FunctionAppDirectory = Path.Combine(home, "site", "wwwroot");
 
             string sqlcon = Environment.GetEnvironmentVariable("SqlConnectionString", EnvironmentVariableTarget.Process);
             if (string.IsNullOrEmpty(sqlcon)) throw new Exception("SqlConnectionString environment variable is not set.");
@@ -73,8 +74,8 @@ namespace NVCLDataServicesAZ
 
                 }
 
-                var path = Path.Combine(context.FunctionAppDirectory, "imagecarouseltemplate.html");
-                var stylepath = Path.Combine(context.FunctionAppDirectory, "style.css");
+                var path = Path.Combine(FunctionAppDirectory, "imagecarouseltemplate.html");
+                var stylepath = Path.Combine(FunctionAppDirectory, "style.css");
 
                 if (File.Exists(path) && File.Exists(stylepath))
                 {

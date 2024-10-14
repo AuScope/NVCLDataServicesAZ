@@ -1,39 +1,33 @@
 using System.Data;
 using System;
-using System.IO;
 using System.Net;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
-using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Enums;
 using Microsoft.Extensions.Logging;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Newtonsoft.Json;
 using Microsoft.Data.SqlClient;
 using Dapper;
 using System.Linq;
-using MoreLinq;
 using System.Collections.Generic;
 using System.Text;
-using Microsoft.SqlServer.TransactSql.ScriptDom;
 using Microsoft.AspNetCore.Http.Extensions;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Enums;
 
 namespace NVCLDataServicesAZ
 {
-    public class mosaic
+    public class Mosaic
     {
-        private readonly ILogger<mosaic> _logger;
+        private readonly ILogger<Mosaic> _logger;
 
-        public mosaic(ILogger<mosaic> log)
+        public Mosaic(ILogger<Mosaic> log)
         {
             _logger = log;
         }
 
-        [FunctionName("mosaic")]
+        [Function("mosaic")]
         [OpenApiOperation(operationId: "Run", tags: new[] { "logid", "datasetid" })]
         [OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
         [OpenApiParameter(name: "logid", In = ParameterLocation.Query, Required = false, Type = typeof(string), Description = "The **logid** parameter")]

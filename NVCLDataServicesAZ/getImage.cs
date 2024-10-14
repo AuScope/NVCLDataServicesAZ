@@ -14,16 +14,15 @@ using Dapper;
 using EllipticCurve.Utils;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
-using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Enums;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using SkiaSharp;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Enums;
 
 namespace NVCLDataServicesAZ
 {
@@ -36,7 +35,7 @@ namespace NVCLDataServicesAZ
             _logger = log;
         }
 
-        [FunctionName("getImage")]
+        [Function("getImage")]
         [OpenApiOperation(operationId: "Run", tags: new[] { "logid" })]
         [OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
         [OpenApiParameter(name: "logid", In = ParameterLocation.Query, Required = false, Type = typeof(string), Description = "The **logid** parameter")]
@@ -119,6 +118,7 @@ namespace NVCLDataServicesAZ
                     catch (Exception ex)
                     {
                         // historgram correction failed. just return the raw image
+                        _logger.LogInformation("Failed to apply image histogram crrection due to : "+ex.ToString());
                         return new FileStreamResult(new MemoryStream(imgbytes), "image/jpeg");
                     }
                 }

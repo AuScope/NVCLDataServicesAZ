@@ -6,15 +6,14 @@ using System.Xml.Serialization;
 using System.Xml;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json;
 using System;
 using System.Data;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.WebJobs.Extensions.OpenApi.Core.Attributes;
 
 namespace NVCLDataServicesAZ
 {
@@ -27,7 +26,7 @@ namespace NVCLDataServicesAZ
             _logger = log;
         }
 
-        [FunctionName("getLogCollection")]
+        [Function("getLogCollection")]
         [OpenApiOperation(operationId: "Run", tags: new[] { "datasetid" })]
         [OpenApiParameter(name: "datasetid", In = ParameterLocation.Query, Required = true, Type = typeof(string), Description = "The **datasetid** parameter")]
         [OpenApiParameter(name: "mosaicsvc", In = ParameterLocation.Query, Required = false, Type = typeof(string), Description = "The **mosaicsvc** parameter")]
