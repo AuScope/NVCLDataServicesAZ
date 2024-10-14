@@ -124,5 +124,35 @@ namespace NVCLDataServicesAZ
     {
         public string datasetid { get; set; }
         public string email { get; set; }
+        public string downloadURL { get; set; }
     }
+
+    public class ClassLogData
+    {
+        public int sampleNo { get; set; }
+        public string classtext { get; set; }
+        public int colour { get; set; }
+        public float depth { get; set; }
+    }
+
+    public class FloatLogData
+    {
+        public int sampleNo { get; set; }
+        public float depth { get; set; }
+        public float? value { get; set; }
+    }
+
+    public class DecimalValueRange
+    {
+        public float minvalue { get; set; }
+        public float maxvalue { get; set; }
+    }
+
+    public class MaskLogData
+    {
+        public int sampleNo { get; set; }
+        public float depth { get; set; }
+        public Boolean value { get; set; }
+    }
+
 }
