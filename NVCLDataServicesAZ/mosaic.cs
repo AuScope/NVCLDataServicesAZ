@@ -34,15 +34,17 @@ namespace NVCLDataServicesAZ
         }
 
         [FunctionName("mosaic")]
-        [OpenApiOperation(operationId: "Run", tags: new[] { "name" })]
+        [OpenApiOperation(operationId: "Run", tags: new[] { "logid", "datasetid" })]
         [OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
         [OpenApiParameter(name: "logid", In = ParameterLocation.Query, Required = false, Type = typeof(string), Description = "The **logid** parameter")]
         [OpenApiParameter(name: "datasetid", In = ParameterLocation.Query, Required = false, Type = typeof(string), Description = "The **datasetid** parameter")]
         [OpenApiParameter(name: "startsampleno", In = ParameterLocation.Query, Required = false, Type = typeof(string), Description = "The **startsampleno** parameter")]
         [OpenApiParameter(name: "endsampleno", In = ParameterLocation.Query, Required = false, Type = typeof(string), Description = "The **endsampleno** parameter")]
+        [OpenApiParameter(name: "width", In = ParameterLocation.Query, Required = false, Type = typeof(int), Description = "The **width** parameter")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "text/plain", bodyType: typeof(string), Description = "The OK response")]
         public async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = "{x:regex(^(mosaic.*.html|mosaic)$)}")] HttpRequest req)
+            //{x:regex(^(mosaic.*.html|mosaic)$)}
+            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = "mosaic.html")] HttpRequest req)
         {
             _logger.LogInformation("C# HTTP trigger function processed a request.");
 
@@ -59,7 +61,7 @@ namespace NVCLDataServicesAZ
             bool showdepths = "true".Equals(req.Query["showdepths"], StringComparison.OrdinalIgnoreCase);
 
             string datasetid = req.Query["datasetid"];
-            String scalaridsstring = req.Query["datasetid"];
+            String scalaridsstring = req.Query["scalarids"];
             string[] scalarray = scalaridsstring?.Split(",");
             var scalarids = new List<string>();
             if (scalarray!=null) scalarids.AddRange(scalarray);
@@ -132,7 +134,7 @@ namespace NVCLDataServicesAZ
                     }
                 }
 
-                StringBuilder imageURL = new StringBuilder("<div class=\"NVCLMosaicContainer\" >");
+                StringBuilder imageURL = new StringBuilder("<!DOCTYPE HTML>\r\n<html>\r\n  <head>\r\n    <title>NVCL Data Services :: Mosaic Web Service</title>\r\n</head><body><section><div class=\"NVCLMosaicContainer\" >");
 
                 string rangesql = @"select max(samplenumber) from domainlogdata where log_id = @logid and samplenumber between @startsampleno and @endsampleno ";
                 var lastsamp = connection.Query<int>(rangesql, new { logid = domainlogId, startsampleno = startsampleno, endsampleno = endsampleno }).Single();
@@ -231,9 +233,11 @@ namespace NVCLDataServicesAZ
                     i++;
                 }
 
-                imageURL.Append("</div>");
+                imageURL.Append("</div></section>");
 
                 imageURL.Append("<style>\r\nh2.NVCLDSh2 {\r\n  padding:8px;\r\n  text-align:center;\r\n}\r\n\r\ntable.NVCLDSTable {\r\n  background:#CCFFFF;\r\n  margin-left:auto; \r\n  margin-right:auto;\r\n  width:800px;\r\n  border: 2px solid #000066;\r\n}\r\n\r\ntable.usageTable {\r\n\tborder: 1px solid black;\r\n\tborder-collapse:collapse;\r\n}\r\n\r\ntable.usageTable td, table.usageTable th {\r\n\tborder: 1px solid black;\r\n\tpadding:8px;\r\n}\r\n\r\ntable.NVCLDSTable td, table.NVCLDSTable th {\r\n  padding:8px;\r\n}\r\n\r\ntable.NVCLDSTable thead {\r\n  background-color:#99CCCC;\r\n}\r\n\r\n.pixelated {\r\n  image-rendering:optimizeSpeed;             /* Legal fallback */\r\n  image-rendering:-moz-crisp-edges;          /* Firefox        */\r\n  image-rendering:-o-crisp-edges;            /* Opera          */\r\n  image-rendering:-webkit-optimize-contrast; /* Safari         */\r\n  image-rendering:optimize-contrast;         /* CSS3 Proposed  */\r\n  image-rendering:crisp-edges;               /* CSS4 Proposed  */\r\n  image-rendering:pixelated;                 /* CSS4 Proposed  */\r\n  -ms-interpolation-mode:nearest-neighbor;   /* IE8+           */\r\n}\r\n\r\n.NVCLMosaicCell, .NVCLMosaicCelltwoDCell {\r\n\tdisplay:block;\r\n\tfloat:left;\r\n}\r\n\r\n.NVCLMosaicCelltwoDCell {\r\n  border-bottom: black solid 2px;\r\n  border-top: black solid 2px;\r\n  margin-bottom: 2px;\r\n}\r\n\r\n.NVCLMosaicCellContent {\r\n\tdisplay:table;\r\n\ttable-layout:fixed;\r\n\twidth:100%;\r\n\theight: 100%;\r\n}\r\n\r\n.NVCLMosaicCellDepths {\r\n\tvertical-align:middle;\r\n\tdisplay: table-cell;\r\n\twidth:33%;\r\n}\r\n\r\n.NVCLMosaicCellPara {\r\n\ttext-align: center;\r\n\tmargin: 0;\r\n}\r\n\r\n.NVCLMosaicCellImg {\r\n\tdisplay:table-cell;\r\n\theight: 100%;\r\n}\r\n\r\n.NVCLMosaicImage {\r\n\tdisplay: block;\r\n\twidth: 100%;\r\n\r\n}\r\n\r\n.floatingGraph {\r\n\tposition: absolute;\r\n\tz-index: 99;\r\n\twidth:800px;\r\n\tbackground:white;\r\n\toverflow: hidden;\r\n  display:none;\r\n  resize: both;\r\n}\r\n\r\n.circle\r\n  {\r\n    border-radius: 50%;\r\n    width: 26px;\r\n    height: 26px; \r\n    background:green;\r\n    position:absolute;\r\n  }\r\n  \r\n.flabel-center{\r\n  text-align: center;\r\n  vertical-align: middle;\r\n  position: relative;\r\n  line-height: 26px; \r\n  font-size:1em;\r\n}  \r\n\r\n.carousel-inner > .carousel-item > img,\r\n.carousel-inner > .carousel-item > a > img {\r\n    margin: auto;\r\n}\r\n\r\n.carousel {\r\n  position: absolute;\r\n  width: 90%;\r\n}\r\n\r\n.carousel-control-prev {\r\nwidth:5% !important;\r\n}\r\n\r\n.carousel-control-next {\r\nwidth:5% !important;\r\nright:-10% !important;\r\n}\r\n\r\n.caroimage {\r\nwidth:100%;\r\n}\r\n\r\n.carousel-inner {\r\n    left:5%;\r\n}\r\n\r\n.CarouselBody {\r\nbackground-color:black;\r\n}\r\n\r\n.legend\r\n{\r\n  position: absolute;\r\n  top: 10px;\r\n  right: 10px;\r\n  display:none !important;\r\n}\r\n\r\n.LSImageSlice\r\n{\r\n  display: block;\r\n  max-width: 100%;\r\n  border-left-width: 8px;\r\n  border-right-width: 8px;\r\n  border-style: solid;\r\n  border-top-width: 0px;\r\n  border-bottom-width: 0px;\r\n}\r\n\r\n.imgSlicesRotatedDiv\r\n{\r\n  transform: rotate(270deg);\r\n  transform-origin: top left;\r\n  width: 75%;\r\n  top:100%;\r\n  position: absolute;\r\n\r\n}\r\n\r\n.plotspectracontainer\r\n{\r\n  position: relative;\r\n  left:32%;\r\n}\r\n\r\n.chart_container\r\n{\r\n  margin: 10px;\r\n}\r\n\r\n.chart\r\n{\r\n  display: flex\r\n}\r\n\r\n.LSImageLink\r\n{\r\n  display: flex;\r\n  flex-direction: column;\r\n  align-items: center;\r\n}\r\n\r\n.hiddenLSImage\r\n{\r\n  width: 0px;\r\n}</style>");
+                
+                imageURL.Append("</body></html>");
 
                 return new ContentResult()
                 {

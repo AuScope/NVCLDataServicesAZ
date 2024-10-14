@@ -30,7 +30,7 @@ namespace NVCLDataServicesAZ
         }
 
         [FunctionName("trayImageSampleLocate")]
-        [OpenApiOperation(operationId: "Run", tags: new[] { "name" })]
+        [OpenApiOperation(operationId: "trayImageSampleLocate", tags: new[] { "logid" })]
         [OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
         [OpenApiParameter(name: "logid", In = ParameterLocation.Query, Required = true, Type = typeof(string), Description = "The **logid** parameter")]
         [OpenApiParameter(name: "sampleno", In = ParameterLocation.Query, Required = true, Type = typeof(string), Description = "The **sampleno** parameter")]
@@ -40,7 +40,8 @@ namespace NVCLDataServicesAZ
         [OpenApiParameter(name: "imgheight", In = ParameterLocation.Query, Required = true, Type = typeof(string), Description = "The **imgheight** parameter")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(string), Description = "The OK response")]
         public async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = "{x:regex(^(trayImageSampleLocate.html|trayImageSampleLocate)$)}")] HttpRequest req)
+            // regex to allow 2 call urls {x:regex(^(trayImageSampleLocate.html|trayImageSampleLocate)$)}
+            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = "trayImageSampleLocate.html")] HttpRequest req)
         {
             _logger.LogInformation("C# HTTP trigger function processed a request.");
 
@@ -117,7 +118,7 @@ namespace NVCLDataServicesAZ
                         }
                     }
 
-                    var datasetid = NVCLDSDataAccess.getImageLogDetails(connection, logid).DatasetID;
+                    var datasetid = NVCLDSDataAccess.getLogDetails(connection, logid).DatasetID;
 
                     var secs = NVCLDSDataAccess.getTraySections(connection, datasetid, sampleno);
 

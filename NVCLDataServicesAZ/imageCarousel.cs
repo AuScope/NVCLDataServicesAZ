@@ -29,13 +29,14 @@ namespace NVCLDataServicesAZ
         }
 
         [FunctionName("imageCarousel")]
-        [OpenApiOperation(operationId: "Run", tags: new[] { "name" })]
+        [OpenApiOperation(operationId: "Run", tags: new[] { "logid" })]
         [OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
         [OpenApiParameter(name: "logid", In = ParameterLocation.Query, Required = true, Type = typeof(string), Description = "The **logid** parameter")]
         [OpenApiParameter(name: "sampleno", In = ParameterLocation.Query, Required = false, Type = typeof(string), Description = "The **sampleno** parameter")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "text/plain", bodyType: typeof(string), Description = "The OK response")]
         public async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = "{x:regex(^(imageCarousel.html|imageCarousel)$)}")] HttpRequest req,
+            // {x:regex(^(imageCarousel.html|imageCarousel)$)}
+            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = "imageCarousel.html")] HttpRequest req,
             ExecutionContext context)
         {
             _logger.LogInformation("C# HTTP trigger function processed a request.");
@@ -57,7 +58,7 @@ namespace NVCLDataServicesAZ
             if (string.IsNullOrEmpty(sqlcon)) throw new Exception("SqlConnectionString environment variable is not set.");
             using (SqlConnection connection = new SqlConnection(sqlcon))
             {
-                Log imglog = NVCLDSDataAccess.getImageLogDetails(connection, logid);
+                Log imglog = NVCLDSDataAccess.getLogDetails(connection, logid);
                 var domaindatapoints = NVCLDSDataAccess.getDomainDataPoints(connection, imglog.DomainLogID);
 
                 if (sampleno > domaindatapoints.Last().SAMPLENUMBER) throw new Exception("sample number requested is outside of this image log's range");

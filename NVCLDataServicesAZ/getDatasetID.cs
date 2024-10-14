@@ -26,12 +26,13 @@ namespace NVCLDataServicesAZ
         }
 
         [FunctionName("getDatasetID")]
-        [OpenApiOperation(operationId: "Run", tags: new[] { "name" })]
+        [OpenApiOperation(operationId: "Run", tags: new[] { "logid" })]
         [OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
         [OpenApiParameter(name: "logid", In = ParameterLocation.Query, Required = true, Type = typeof(string), Description = "The **logid** parameter")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "text/plain", bodyType: typeof(string), Description = "The OK response")]
         public async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = "{x:regex(^(getDatasetID.html|getDatasetID)$)}")] HttpRequest req)
+            // {x:regex(^(getDatasetID.html|getDatasetID)$)}
+            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = "getDatasetID.html")] HttpRequest req)
         {
             _logger.LogInformation("C# HTTP trigger function processed a request.");
 
@@ -41,7 +42,7 @@ namespace NVCLDataServicesAZ
             if (string.IsNullOrEmpty(sqlcon)) throw new Exception("SqlConnectionString environment variable is not set.");
             using (SqlConnection connection = new SqlConnection(sqlcon))
             {
-                var imgdetails = NVCLDSDataAccess.getImageLogDetails(connection, logid);
+                var imgdetails = NVCLDSDataAccess.getLogDetails(connection, logid);
 
                 return new OkObjectResult(new { datasetid = imgdetails.DatasetID });
             }

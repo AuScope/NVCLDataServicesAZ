@@ -28,7 +28,7 @@ namespace NVCLDataServicesAZ
         }
 
         [FunctionName("getspectraldata")]
-        [OpenApiOperation(operationId: "Run", tags: new[] { "name" })]
+        [OpenApiOperation(operationId: "Run", tags: new[] { "speclogid" })]
         [OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
         [OpenApiParameter(name: "speclogid", In = ParameterLocation.Query, Required = true, Type = typeof(string), Description = "The **speclogid** parameter")]
         [OpenApiParameter(name: "startsampleno", In = ParameterLocation.Query, Required = false, Type = typeof(string), Description = "The **startsampleno** parameter")]
@@ -36,7 +36,8 @@ namespace NVCLDataServicesAZ
         [OpenApiParameter(name: "outputformat", In = ParameterLocation.Query, Required = false, Type = typeof(string), Description = "The **outputformat** parameter")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "text/plain", bodyType: typeof(string), Description = "The OK response")]
         public async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = "{x:regex(^(getspectraldata.html|getspectraldata)$)}")] HttpRequest req)
+            // "{x:regex(^(getspectraldata.html|getspectraldata)$)}"
+            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = "getspectraldata.html")] HttpRequest req)
         {
             _logger.LogInformation("C# HTTP trigger function processed a request.");
 
@@ -50,23 +51,17 @@ namespace NVCLDataServicesAZ
             int endsamplenotmp = 0;
             if (int.TryParse(req.Query["endsampleno"], out endsamplenotmp)) endsampleno = endsamplenotmp;
 
-            string azureBlobStore = System.Environment.GetEnvironmentVariable("AzureBlobStore", EnvironmentVariableTarget.Process);
+
 
             List<SpectralData> spectraldata = new List<SpectralData>();
 
-            if (string.IsNullOrEmpty(azureBlobStore))
+            string sqlcon = Environment.GetEnvironmentVariable("SqlConnectionString", EnvironmentVariableTarget.Process);
+            if (string.IsNullOrEmpty(sqlcon)) throw new Exception("SqlConnectionString environment variable is not set.");
+            using (SqlConnection connection = new SqlConnection(sqlcon))
             {
-                string sqlcon = Environment.GetEnvironmentVariable("SqlConnectionString", EnvironmentVariableTarget.Process);
-                if (string.IsNullOrEmpty(sqlcon)) throw new Exception("SqlConnectionString environment variable is not set.");
-                using (SqlConnection connection = new SqlConnection(sqlcon))
-                {
-                    spectraldata = NVCLDSDataAccess.getSpectralData(connection, speclogid, startsampleno, endsampleno);   
-                }
+                spectraldata = NVCLDSDataAccess.getSpectralData(connection, speclogid, startsampleno, endsampleno);   
             }
-            else
-            {
-                // do blob store stuff
-            }
+
 
             if (outputjson)
             {

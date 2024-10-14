@@ -27,12 +27,13 @@ namespace NVCLDataServicesAZ
         }
 
         [FunctionName("getSpectralLogSamplingPoints")]
-        [OpenApiOperation(operationId: "Run", tags: new[] { "name" })]
+        [OpenApiOperation(operationId: "Run", tags: new[] { "speclogid" })]
         [OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
         [OpenApiParameter(name: "speclogid", In = ParameterLocation.Query, Required = true, Type = typeof(List<String>), Description = "The **speclogid** parameter")]
         [OpenApiResponseWithBody(statusCode: HttpStatusCode.OK, contentType: "application/json", bodyType: typeof(string), Description = "The OK response")]
         public async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = "{x:regex(^(getSpectralLogSamplingPoints.html|getSpectralLogSamplingPoints)$)}")] HttpRequest req)
+            // {x:regex(^(getSpectralLogSamplingPoints.html|getSpectralLogSamplingPoints)$)}
+            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = "getSpectralLogSamplingPoints.html")] HttpRequest req)
         {
             _logger.LogInformation("C# HTTP trigger function processed a request.");
 
